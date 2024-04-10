@@ -1,0 +1,252 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import styled from "@emotion/styled";
+import { Category, Task } from "../types/user";
+import { useState, useEffect, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AddTaskButton, ColorPalette, Container, StyledInput } from "../styles";
+import { CancelRounded, Edit } from "@mui/icons-material";
+import { Button, IconButton, InputAdornment, Tooltip } from "@mui/material";
+import { DESCRIPTION_MAX_LENGTH, TASK_NAME_MAX_LENGTH } from "../constants";
+import { CategorySelect, ColorPicker, TopBar, CustomEmojiPicker } from "../components";
+import { UserContext } from "../contexts/UserContext";
+import { useStorageState } from "../hooks/useStorageState";
+import { useTheme } from "@emotion/react";
+import { getFontColor, showToast } from "../utils";
+
+// Define styled button component with black-green gradient
+const StyledAddTaskButton = styled(Button)`
+  background: linear-gradient(135deg, #000000, #00ff00);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+
+  &:hover {
+    background: linear-gradient(135deg, #00ff00, #000000);
+  }
+`;
+
+const AddTask = () => {
+  const { user, setUser } = useContext(UserContext);
+  const theme = useTheme();
+  const blackGreenColor = "#00ff00"; // Define black-green color
+  const [name, setName] = useStorageState<string>("", "name", "sessionStorage");
+  const [emoji, setEmoji] = useStorageState<string | null>(null, "emoji", "sessionStorage");
+  const [color, setColor] = useStorageState<string>(blackGreenColor, "color", "sessionStorage");
+  const [description, setDescription] = useStorageState<string>(
+    "",
+    "description",
+    "sessionStorage"
+  );
+  const [deadline, setDeadline] = useStorageState<string>("", "deadline", "sessionStorage");
+  const [nameError, setNameError] = useState<string>("");
+  const [descriptionError, setDescriptionError] = useState<string>("");
+  const [selectedCategories, setSelectedCategories] = useStorageState<Category[]>(
+    [],
+    "categories",
+    "sessionStorage"
+  );
+
+  const n = useNavigate();
+
+  useEffect(() => {
+    document.title = "Todo App - Add Task";
+    if (name.length > TASK_NAME_MAX_LENGTH) {
+      setNameError(`Name should be less than or equal to ${TASK_NAME_MAX_LENGTH} characters`);
+    } else {
+      setNameError("");
+    }
+    if (description.length > DESCRIPTION_MAX_LENGTH) {
+      setDescriptionError(
+        `Description should be less than or equal to ${DESCRIPTION_MAX_LENGTH} characters`
+      );
+    } else {
+      setDescriptionError("");
+    }
+  }, [description.length, name.length]);
+
+  const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = event.target.value;
+    setName(newName);
+    if (newName.length > TASK_NAME_MAX_LENGTH) {
+      setNameError(`Name should be less than or equal to ${TASK_NAME_MAX_LENGTH} characters`);
+    } else {
+      setNameError("");
+    }
+  };
+
+  const handleDescriptionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newDescription = event.target.value;
+    setDescription(newDescription);
+    if (newDescription.length > DESCRIPTION_MAX_LENGTH) {
+      setDescriptionError(
+        `Description should be less than or equal to ${DESCRIPTION_MAX_LENGTH} characters`
+      );
+    } else {
+      setDescriptionError("");
+    }
+  };
+
+  const handleDeadlineChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setDeadline(event.target.value);
+  };
+
+  const handleAddTask = () => {
+    if (name !== "") {
+      if (name.length > TASK_NAME_MAX_LENGTH || description.length > DESCRIPTION_MAX_LENGTH) {
+        return; // Do not add the task if the name or description exceeds the maximum length
+      }
+
+      const newTask: Task = {
+        id: crypto.randomUUID(),
+        done: false,
+        pinned: false,
+        name,
+        description: description !== "" ? description : undefined,
+        emoji: emoji ? emoji : undefined,
+        color,
+        date: new Date(),
+        deadline: deadline !== "" ? new Date(deadline) : undefined,
+        category: selectedCategories ? selectedCategories : [],
+      };
+
+      setUser((prevUser) => ({
+        ...prevUser,
+        tasks: [...prevUser.tasks, newTask],
+      }));
+
+      n("/");
+
+      showToast(
+        <div>
+          Added task - <b>{newTask.name}</b>
+        </div>
+      );
+
+      const itemsToRemove = ["name", "color", "description", "emoji", "deadline", "categories"];
+      itemsToRemove.map((item) => sessionStorage.removeItem(item));
+    } else {
+      showToast("Task name is required.", { type: "error" });
+    }
+  };
+
+  return (
+    <>
+      <TopBar title="Add New Task" />
+      <Container>
+        <CustomEmojiPicker
+          emoji={typeof emoji === "string" ? emoji : undefined}
+          setEmoji={setEmoji}
+          color={color}
+          theme={getFontColor(theme.secondary) === ColorPalette.fontDark ? "light" : "dark"}
+        />
+        <StyledInput
+          label="Task Name"
+          name="name"
+          placeholder="Enter task name"
+          autoComplete="off"
+          value={name}
+          onChange={handleNameChange}
+          focused
+          required
+          error={nameError !== ""}
+          helpercolor={nameError && ColorPalette.red}
+          helperText={
+            name === ""
+              ? undefined
+              : !nameError
+              ? `${name.length}/${TASK_NAME_MAX_LENGTH}`
+              : nameError
+          }
+        />
+        <StyledInput
+          label="Task Description (optional)"
+          name="name"
+          placeholder="Enter task description"
+          autoComplete="off"
+          value={description}
+          onChange={handleDescriptionChange}
+          multiline
+          rows={4}
+          focused
+          error={descriptionError !== ""}
+          helpercolor={descriptionError && ColorPalette.red}
+          helperText={
+            description === ""
+              ? undefined
+              : !descriptionError
+              ? `${description.length}/${DESCRIPTION_MAX_LENGTH}`
+              : descriptionError
+          }
+        />
+        <StyledInput
+          label="Task Deadline (optional)"
+          name="name"
+          placeholder="Enter deadline date"
+          type="datetime-local"
+          value={deadline}
+          onChange={handleDeadlineChange}
+          defaultValue=""
+          focused
+          sx={{
+            colorScheme: getFontColor(theme.secondary) === ColorPalette.fontDark ? "light" : "dark",
+          }}
+          InputProps={{
+            startAdornment:
+              deadline && deadline !== "" ? (
+                <InputAdornment position="start">
+                  <Tooltip title="Clear">
+                    <IconButton color="error" onClick={() => setDeadline("")}>
+                      <CancelRounded />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ) : undefined,
+          }}
+        />
+        {user.settings[0].enableCategories !== undefined && user.settings[0].enableCategories && (
+          <>
+            <br />
+            <CategorySelect
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
+              width="400px"
+              fontColor={getFontColor(theme.secondary)}
+            />
+            <Link to="/categories">
+              <Button
+                sx={{
+                  margin: "8px 0 24px 0 ",
+                  p: "12px 20px",
+                  borderRadius: "14px",
+                }}
+              >
+                <Edit /> &nbsp; Modify Categories
+              </Button>
+            </Link>
+          </>
+        )}
+        <ColorPicker
+          color={color}
+          width="400px"
+          onColorChange={(color) => {
+            setColor(color);
+          }}
+          fontColor={getFontColor(theme.secondary)}
+        />
+        <StyledAddTaskButton
+          onClick={handleAddTask}
+          disabled={
+            name.length > TASK_NAME_MAX_LENGTH || description.length > DESCRIPTION_MAX_LENGTH
+          }
+        >
+          Create Task
+        </StyledAddTaskButton>
+      </Container>
+    </>
+  );
+};
+
+export default AddTask;
