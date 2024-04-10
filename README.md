@@ -14,7 +14,6 @@
 - **🗃️ Multi-Task Selection**: Option to select multiple tasks and perform actions on all of them at once.
 - **🔎 Search Tasks**: Search functionality allows you to filter tasks by name or description, making it easy to find what you need.
 
-## 🚀 Performance
 
 
 ## 💻 Tech Stack
