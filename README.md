@@ -1,13 +1,7 @@
-<!-- prettier-ignore -->
-<p align="center">
-<img src="public/logo256.png" width="128px" />
+
 <h1>📝Todo App</h1>
-</p>
 
-<p align="center">
 
-<img src="screenshots/iPhone Mockup.png" width="400px" />
-</p>
 
 ## ⚡ Features
 
@@ -22,7 +16,6 @@
 
 ## 🚀 Performance
 
-<img src="screenshots/performance.png" width="600px" />
 
 ## 💻 Tech Stack
 
